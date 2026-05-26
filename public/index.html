@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coon Family World Cup HQ 🏆</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>🏆 COON FAMILY WORLD CUP HQ 🏆</h1>
+  <div class="subtitle">2026 FIFA WORLD CUP</div>
+  <nav>
+    <a href="/" class="nav-link active">HQ</a>
+    <a href="/draft" class="nav-link">DRAFT</a>
+  </nav>
+</header>
+
+<div class="sync-bar">
+  <span class="last-sync" id="last-sync-text">Last sync: never</span>
+  <button class="btn btn-green btn-sm" id="sync-btn" onclick="triggerSync()">⟳ SYNC SCORES</button>
+  <span id="sync-status" style="font-size:0.75rem;color:var(--dim);"></span>
+</div>
+
+<!-- Draft notice (shown when draft not complete) -->
+<div class="draft-notice hidden" id="draft-notice">
+  <h2 style="color:var(--gold);font-size:0.65rem;">⚠ DRAFT IN PROGRESS</h2>
+  <p>Not all teams have been drafted yet. <a href="/draft" style="color:var(--gold);">GO TO DRAFT CENTRAL →</a></p>
+</div>
+
+<!-- ── Standings ── -->
+<section class="hq-standings" id="standings-grid">
+  <!-- Populated by JS -->
+  <div class="no-results" style="grid-column:1/-1;">LOADING STANDINGS...</div>
+</section>
+
+<!-- ── Recent Results ── -->
+<section class="results-section">
+  <h2>⚽ RECENT RESULTS</h2>
+  <div id="results-list">
+    <div class="no-results">Waiting for match results...</div>
+  </div>
+</section>
+
+<script>
+const FAMILY_ORDER  = ['og', 'cali', 'co', 'cajun'];
+const FAMILY_DISPLAY = { og: 'OG COONS', cali: 'CALI COONS', co: 'CO COONS', cajun: 'CAJUN COONS' };
+const FAMILY_COLORS  = { og: '#ffd700', cali: '#42a5f5', co: '#66bb6a', cajun: '#ef5350' };
+
+const STAGE_LABELS = {
+  GROUP_STAGE: 'GROUP',
+  ROUND_OF_32: 'R32',
+  ROUND_OF_16: 'R16',
+  QUARTER_FINALS: 'QF',
+  SEMI_FINALS: 'SF',
+  THIRD_PLACE_PLAYOFF: '3RD',
+  FINAL: 'FINAL',
+};
+
+async function loadHQ() {
+  try {
+    const res  = await fetch('/api/hq');
+    const data = await res.json();
+    renderStandings(data);
+    renderResults(data.recentMatches);
+    renderSyncStatus(data.lastSync);
+    if (!data.draftComplete) {
+      document.getElementById('draft-notice').classList.remove('hidden');
+    } else {
+      document.getElementById('draft-notice').classList.add('hidden');
+    }
+  } catch (e) {
+    console.error('HQ load error:', e);
+  }
+}
+
+function renderStandings(data) {
+  const grid   = document.getElementById('standings-grid');
+  const totals = data.totals;
+  const summary = data.summary;
+
+  // Sort by points desc for rank display
+  const ranked = [...FAMILY_ORDER].sort((a, b) => totals[b] - totals[a]);
+
+  grid.innerHTML = '';
+  for (const key of ranked) {
+    const rank  = ranked.indexOf(key) + 1;
+    const color = FAMILY_COLORS[key];
+    const picks = summary[key] || [];
+
+    const card = document.createElement('div');
+    card.className = `family-card rank-${rank}`;
+    card.style.borderColor = color;
+
+    // Rank crown
+    let crownHtml = '';
+    if (rank === 1 && totals[key] > 0) crownHtml = '<span style="font-size:1.2rem;">👑</span>';
+
+    card.innerHTML = `
+      <h2 style="color:${color};border-color:${color};">
+        ${crownHtml}${FAMILY_DISPLAY[key]}
+      </h2>
+      <div class="points-display" style="color:${color};">
+        ${totals[key].toFixed(1)} <span style="font-size:0.4em;color:var(--dim);">PTS</span>
+      </div>
+      <div id="picks-${key}"></div>
+    `;
+    grid.appendChild(card);
+
+    const picksDiv = card.querySelector(`#picks-${key}`);
+    if (picks.length === 0) {
+      picksDiv.innerHTML = `<div class="wc-team-entry empty">No picks yet</div>`;
+    } else {
+      for (const p of picks) {
+        picksDiv.innerHTML += `
+          <div class="wc-team-entry">
+            <span class="wt-flag">${p.flag}</span>
+            <span class="wt-name">${p.name}</span>
+          </div>
+        `;
+      }
+      // Fill blank slots if draft incomplete
+      for (let i = picks.length; i < 3; i++) {
+        picksDiv.innerHTML += `<div class="wc-team-entry empty">— TBD —</div>`;
+      }
+    }
+  }
+}
+
+function renderResults(matches) {
+  const list = document.getElementById('results-list');
+  if (!matches || matches.length === 0) {
+    list.innerHTML = '<div class="no-results">No results yet. Check back once matches start!</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  for (const m of matches) {
+    const stageLabel = STAGE_LABELS[m.stage] || m.stage;
+    const earnerHtml = m.earners.map(e => {
+      const color = FAMILY_COLORS[e.family] || '#fff';
+      return `<span class="earner-chip" style="color:${color};border-color:${color};">
+        ${FAMILY_DISPLAY[e.family]?.replace(' COONS','')} +${e.pts}
+      </span>`;
+    }).join('');
+
+    const row = document.createElement('div');
+    row.style.cssText = 'margin-bottom:8px;';
+    row.innerHTML = `
+      <div class="result-row">
+        <span class="result-stage">${stageLabel}</span>
+        <span class="result-team">${m.homeFlag} ${m.homeName}</span>
+        <span class="result-score">${m.homeScore} – ${m.awayScore}</span>
+        <span class="result-team right">${m.awayName} ${m.awayFlag}</span>
+        <span></span>
+      </div>
+      ${earnerHtml ? `<div style="padding:4px 10px;display:flex;gap:6px;flex-wrap:wrap;">${earnerHtml}</div>` : ''}
+    `;
+    list.appendChild(row);
+  }
+}
+
+function renderSyncStatus(lastSync) {
+  const el = document.getElementById('last-sync-text');
+  if (!lastSync) { el.textContent = 'Last sync: never'; return; }
+  const d    = new Date(lastSync);
+  const mins = Math.round((Date.now() - d) / 60000);
+  if (mins < 1)       el.textContent = 'Last sync: just now';
+  else if (mins < 60) el.textContent = `Last sync: ${mins}m ago`;
+  else                el.textContent = `Last sync: ${d.toLocaleTimeString()}`;
+}
+
+async function triggerSync() {
+  const btn = document.getElementById('sync-btn');
+  const status = document.getElementById('sync-status');
+  btn.disabled = true;
+  btn.textContent = '⟳ SYNCING...';
+  status.textContent = '';
+  try {
+    const res  = await fetch('/api/sync', { method: 'POST' });
+    const data = await res.json();
+    if (data.skipped) {
+      status.textContent = '⚠ No API key set';
+      status.style.color = 'var(--red)';
+    } else {
+      status.textContent = `✓ ${data.synced} matches updated`;
+      status.style.color = 'var(--green)';
+      loadHQ();
+    }
+  } catch (e) {
+    status.textContent = '✗ Sync failed';
+    status.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⟳ SYNC SCORES';
+    setTimeout(() => { status.textContent = ''; }, 5000);
+  }
+}
+
+// Load on start, then every 30 seconds
+loadHQ();
+setInterval(loadHQ, 30000);
+</script>
+</body>
+</html>

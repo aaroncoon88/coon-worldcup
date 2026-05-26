@@ -1,0 +1,5 @@
+node_modules/
+.env
+worldcup.db
+*.db-shm
+*.db-wal

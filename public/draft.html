@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coon Draft Central ⚽</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .my-turn-highlight { border-color: var(--gold) !important; box-shadow: 0 0 16px rgba(255,215,0,0.4), 2px 2px 0 #000 !important; }
+</style>
+</head>
+<body>
+
+<!-- ── Team selection overlay ── -->
+<div id="team-select-overlay" class="overlay">
+  <h1>WHO ARE<br>YOU?</h1>
+  <p class="subtitle">SELECT YOUR FAMILY TEAM</p>
+  <div class="team-select-grid">
+    <button class="team-select-btn og"    onclick="selectTeam('og')">OG<br>COONS</button>
+    <button class="team-select-btn cali"  onclick="selectTeam('cali')">CALI<br>COONS</button>
+    <button class="team-select-btn co"    onclick="selectTeam('co')">CO<br>COONS</button>
+    <button class="team-select-btn cajun" onclick="selectTeam('cajun')">CAJUN<br>COONS</button>
+  </div>
+</div>
+
+<!-- ── Main site header ── -->
+<header class="site-header">
+  <h1>⚽ COON DRAFT CENTRAL ⚽</h1>
+  <nav>
+    <a href="/" class="nav-link">HQ</a>
+    <a href="/draft" class="nav-link active">DRAFT</a>
+    <span id="header-my-team" style="font-family:'Press Start 2P',monospace;font-size:0.42rem;padding:6px 10px;border:2px solid var(--border);"></span>
+    <button class="btn btn-dim btn-sm" onclick="changeTeam()">CHANGE</button>
+  </nav>
+</header>
+
+<!-- ── On-the-clock bar ── -->
+<div class="clock-bar" id="clock-bar">
+  <div>
+    <div class="on-clock-label">ON THE CLOCK</div>
+    <div class="on-clock-team blink" id="clock-team-name">LOADING...</div>
+  </div>
+  <div class="pick-counter" id="pick-counter">PICK ? OF 12</div>
+</div>
+
+<!-- ── Draft complete banner (hidden until done) ── -->
+<div class="complete-banner hidden" id="complete-banner">
+  <h2>🏆 DRAFT COMPLETE! 🏆</h2>
+  <p>All teams have been drafted. Head to HQ to track your points!</p>
+  <br>
+  <a href="/" class="btn btn-gold">GO TO HQ →</a>
+</div>
+
+<!-- ── Main draft layout ── -->
+<div class="draft-layout" id="draft-layout">
+  <!-- Draft board -->
+  <div>
+    <div class="draft-board" id="draft-board">
+      <!-- Populated by JS -->
+    </div>
+    <div style="margin-top:16px;text-align:center;">
+      <button class="btn btn-dim btn-sm" onclick="resetDraft()" title="Reset for testing">↺ RESET DRAFT</button>
+    </div>
+  </div>
+
+  <!-- Picks sidebar -->
+  <div class="picks-sidebar" id="picks-sidebar">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<!-- ── Pick confirm modal ── -->
+<div class="modal-backdrop hidden" id="modal-backdrop">
+  <div class="modal-box">
+    <h2>DRAFT THIS TEAM?</h2>
+    <div>
+      <div class="modal-team" id="modal-flag"></div>
+      <div class="modal-team-name" id="modal-team-name"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn btn-gold" onclick="confirmPick()">YES ✓</button>
+      <button class="btn btn-red"  onclick="closeModal()">NO  ✗</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FAMILY_KEY = 'cwc_myTeam';
+let myTeam = null;
+let pendingPick = null;
+let state = null;
+let pollInterval = null;
+
+const FAMILY_DISPLAY = { og: 'OG COONS', cali: 'CALI COONS', co: 'CO COONS', cajun: 'CAJUN COONS' };
+const FAMILY_COLORS  = { og: '#ffd700', cali: '#42a5f5', co: '#66bb6a', cajun: '#ef5350' };
+const STAGE_LABELS   = {
+  GROUP_STAGE: 'GROUP', ROUND_OF_32: 'R32', ROUND_OF_16: 'R16',
+  QUARTER_FINALS: 'QF', SEMI_FINALS: 'SF', FINAL: 'FINAL', THIRD_PLACE_PLAYOFF: '3RD'
+};
+
+function init() {
+  const stored = localStorage.getItem(FAMILY_KEY);
+  if (stored) {
+    myTeam = stored;
+    document.getElementById('team-select-overlay').classList.add('hidden');
+    updateHeaderTeam();
+  }
+  fetchState();
+  pollInterval = setInterval(fetchState, 2500);
+}
+
+function selectTeam(team) {
+  myTeam = team;
+  localStorage.setItem(FAMILY_KEY, team);
+  document.getElementById('team-select-overlay').classList.add('hidden');
+  updateHeaderTeam();
+  fetchState();
+}
+
+function changeTeam() {
+  localStorage.removeItem(FAMILY_KEY);
+  myTeam = null;
+  document.getElementById('team-select-overlay').classList.remove('hidden');
+}
+
+function updateHeaderTeam() {
+  const el = document.getElementById('header-my-team');
+  if (myTeam) {
+    el.textContent = FAMILY_DISPLAY[myTeam];
+    el.style.color = FAMILY_COLORS[myTeam];
+    el.style.borderColor = FAMILY_COLORS[myTeam];
+  } else {
+    el.textContent = '';
+  }
+}
+
+async function fetchState() {
+  try {
+    const res = await fetch('/api/draft/state');
+    state = await res.json();
+    render();
+  } catch (e) {
+    console.error('State fetch error:', e);
+  }
+}
+
+function render() {
+  if (!state) return;
+  renderClockBar();
+  renderBoard();
+  renderSidebar();
+
+  if (state.isComplete) {
+    document.getElementById('complete-banner').classList.remove('hidden');
+    document.getElementById('draft-layout').classList.add('hidden');
+    document.getElementById('clock-bar').classList.add('hidden');
+  } else {
+    document.getElementById('complete-banner').classList.add('hidden');
+    document.getElementById('draft-layout').classList.remove('hidden');
+    document.getElementById('clock-bar').classList.remove('hidden');
+  }
+}
+
+function renderClockBar() {
+  const nameEl    = document.getElementById('clock-team-name');
+  const counterEl = document.getElementById('pick-counter');
+  const barEl     = document.getElementById('clock-bar');
+
+  if (state.isComplete) return;
+
+  const turn     = state.currentTurn;
+  const name     = FAMILY_DISPLAY[turn] || turn;
+  const color    = FAMILY_COLORS[turn] || '#fff';
+  nameEl.textContent  = name;
+  nameEl.style.color  = color;
+  counterEl.textContent = `PICK ${state.currentPick + 1} OF 12`;
+
+  const isMyTurn = myTeam && myTeam === turn;
+  barEl.style.borderColor = isMyTurn ? color : 'var(--border)';
+  barEl.style.boxShadow   = isMyTurn ? `0 0 20px ${color}55` : 'none';
+  if (isMyTurn) nameEl.classList.add('blink'); else nameEl.classList.remove('blink');
+}
+
+function renderBoard() {
+  const board    = document.getElementById('draft-board');
+  const isMyTurn = myTeam && myTeam === state.currentTurn && !state.isComplete;
+
+  // Group teams by group letter
+  const groups = {};
+  for (const t of state.teams) {
+    if (!groups[t.group]) groups[t.group] = [];
+    groups[t.group].push(t);
+  }
+
+  board.innerHTML = '';
+  for (const groupLetter of 'ABCDEFGHIJKL'.split('')) {
+    const teams = groups[groupLetter];
+    if (!teams) continue;
+
+    const block = document.createElement('div');
+    block.className = 'group-block';
+
+    const label = document.createElement('div');
+    label.className = 'group-label';
+    label.textContent = `GROUP ${groupLetter}`;
+    block.appendChild(label);
+
+    const list = document.createElement('div');
+    list.className = 'team-list-draft';
+
+    for (const t of teams) {
+      const btn = document.createElement('button');
+      btn.className = 'team-btn';
+      if (t.picked) {
+        btn.classList.add('picked');
+        btn.disabled = true;
+        const pickedColor = FAMILY_COLORS[t.pickedBy] || '#888';
+        btn.innerHTML = `
+          <span class="flag">${t.flag}</span>
+          <span class="tname">${t.name}</span>
+          <span class="picked-by" style="color:${pickedColor};border-color:${pickedColor};">${FAMILY_DISPLAY[t.pickedBy]?.replace(' COONS','') || t.pickedBy}</span>
+        `;
+      } else {
+        btn.disabled = !isMyTurn;
+        if (isMyTurn) btn.classList.add('my-turn-highlight');
+        btn.innerHTML = `
+          <span class="flag">${t.flag}</span>
+          <span class="tname">${t.name}</span>
+          <span class="rank-badge">#${t.rank}</span>
+        `;
+        if (isMyTurn) {
+          btn.onclick = () => openModal(t);
+        }
+      }
+      list.appendChild(btn);
+    }
+
+    block.appendChild(list);
+    board.appendChild(block);
+  }
+}
+
+function renderSidebar() {
+  const sidebar = document.getElementById('picks-sidebar');
+  sidebar.innerHTML = '';
+
+  const order = ['og', 'cali', 'co', 'cajun'];
+  for (const key of order) {
+    const teamPicks = state.summary[key] || [];
+    const color     = FAMILY_COLORS[key];
+    const name      = FAMILY_DISPLAY[key];
+
+    const card = document.createElement('div');
+    card.className = 'family-pick-card';
+    if (myTeam === key) card.style.borderColor = color;
+
+    const title = document.createElement('h3');
+    title.textContent = name;
+    title.style.color        = color;
+    title.style.borderColor  = color;
+    card.appendChild(title);
+
+    for (let i = 0; i < 3; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'pick-slot';
+      if (teamPicks[i]) {
+        slot.classList.add('filled');
+        slot.innerHTML = `
+          <span class="slot-num">${i + 1}.</span>
+          <span class="slot-flag">${teamPicks[i].flag}</span>
+          <span>${teamPicks[i].name}</span>
+        `;
+      } else {
+        slot.innerHTML = `<span class="slot-num">${i + 1}.</span><span style="color:var(--border)">───</span>`;
+      }
+      card.appendChild(slot);
+    }
+    sidebar.appendChild(card);
+  }
+}
+
+function openModal(team) {
+  pendingPick = team;
+  document.getElementById('modal-flag').textContent      = team.flag;
+  document.getElementById('modal-team-name').textContent = team.name;
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.add('hidden');
+  pendingPick = null;
+}
+
+async function confirmPick() {
+  if (!pendingPick || !myTeam) return;
+  closeModal();
+
+  try {
+    const res = await fetch('/api/draft/pick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ family_team: myTeam, team_code: pendingPick.code }),
+    });
+    const data = await res.json();
+    if (!data.success) alert(data.error || 'Pick failed');
+    fetchState();
+  } catch (e) {
+    alert('Network error. Try again.');
+  }
+}
+
+async function resetDraft() {
+  if (!confirm('Reset the entire draft? This cannot be undone.')) return;
+  await fetch('/api/draft/reset', { method: 'POST' });
+  fetchState();
+}
+
+// Close modal on backdrop click
+document.getElementById('modal-backdrop').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+init();
+</script>
+</body>
+</html>
