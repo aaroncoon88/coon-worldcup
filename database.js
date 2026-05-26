@@ -88,10 +88,13 @@ const FAMILY_COLORS = {
   cajun: '#ef5350',
 };
 
-// Linear draft order: same sequence each of 3 rounds
+// Snake draft order (3 rounds):
+// Round 1 forward:  OG → Cali → CO → Cajun
+// Round 2 backward: Cajun → CO → Cali → OG
+// Round 3 forward:  OG → Cali → CO → Cajun
 const DRAFT_ORDER = [
   'og','cali','co','cajun',
-  'og','cali','co','cajun',
+  'cajun','co','cali','og',
   'og','cali','co','cajun',
 ];
 
