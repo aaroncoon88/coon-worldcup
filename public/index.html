@@ -11,6 +11,11 @@
 <header class="site-header">
   <h1>🏆 COON FAMILY WORLD CUP HQ 🏆</h1>
   <div class="subtitle">2026 FIFA WORLD CUP</div>
+  <div class="pixel-player-wrap">
+    <div class="pixel-player-frame">
+      <img src="soccer-player.jpg" alt="Retro Soccer Player">
+    </div>
+  </div>
   <nav>
     <a href="/" class="nav-link active">HQ</a>
     <a href="/draft" class="nav-link">DRAFT</a>
@@ -31,7 +36,6 @@
 
 <!-- ── Standings ── -->
 <section class="hq-standings" id="standings-grid">
-  <!-- Populated by JS -->
   <div class="no-results" style="grid-column:1/-1;">LOADING STANDINGS...</div>
 </section>
 
@@ -43,90 +47,74 @@
   </div>
 </section>
 
+<!-- ── Knockout Bracket ── -->
+<section class="bracket-section">
+  <h2>🏆 KNOCKOUT BRACKET</h2>
+  <div id="bracket-container">
+    <div class="no-results">Bracket will appear once teams advance from the group stage.</div>
+  </div>
+</section>
+
 <script>
-const FAMILY_ORDER  = ['og', 'cali', 'co', 'cajun'];
+const FAMILY_ORDER   = ['og', 'cali', 'co', 'cajun'];
 const FAMILY_DISPLAY = { og: 'OG COONS', cali: 'CALI COONS', co: 'CO COONS', cajun: 'CAJUN COONS' };
 const FAMILY_COLORS  = { og: '#ffd700', cali: '#42a5f5', co: '#66bb6a', cajun: '#ef5350' };
 
 const STAGE_LABELS = {
-  GROUP_STAGE: 'GROUP',
-  ROUND_OF_32: 'R32',
-  ROUND_OF_16: 'R16',
-  QUARTER_FINALS: 'QF',
-  SEMI_FINALS: 'SF',
-  THIRD_PLACE_PLAYOFF: '3RD',
-  FINAL: 'FINAL',
+  GROUP_STAGE: 'GROUP', LAST_32: 'R32', LAST_16: 'R16',
+  QUARTER_FINALS: 'QF', SEMI_FINALS: 'SF', THIRD_PLACE: '3RD', FINAL: 'FINAL',
 };
+
+// ── HQ load ──────────────────────────────────────────────────────────────────
 
 async function loadHQ() {
   try {
-    const res  = await fetch('/api/hq');
-    const data = await res.json();
+    const [hqRes, bracketRes] = await Promise.all([fetch('/api/hq'), fetch('/api/bracket')]);
+    const data    = await hqRes.json();
+    const bracket = await bracketRes.json();
     renderStandings(data);
     renderResults(data.recentMatches);
     renderSyncStatus(data.lastSync);
-    if (!data.draftComplete) {
-      document.getElementById('draft-notice').classList.remove('hidden');
-    } else {
-      document.getElementById('draft-notice').classList.add('hidden');
-    }
+    renderBracket(bracket);
+    document.getElementById('draft-notice').classList.toggle('hidden', data.draftComplete);
   } catch (e) {
     console.error('HQ load error:', e);
   }
 }
 
-function renderStandings(data) {
-  const grid   = document.getElementById('standings-grid');
-  const totals = data.totals;
-  const summary = data.summary;
+// ── Standings ────────────────────────────────────────────────────────────────
 
-  // Sort by points desc for rank display
-  const ranked = [...FAMILY_ORDER].sort((a, b) => totals[b] - totals[a]);
+function renderStandings(data) {
+  const grid    = document.getElementById('standings-grid');
+  const totals  = data.totals;
+  const summary = data.summary;
+  const ranked  = [...FAMILY_ORDER].sort((a, b) => totals[b] - totals[a]);
 
   grid.innerHTML = '';
   for (const key of ranked) {
     const rank  = ranked.indexOf(key) + 1;
     const color = FAMILY_COLORS[key];
     const picks = summary[key] || [];
-
-    const card = document.createElement('div');
+    const card  = document.createElement('div');
     card.className = `family-card rank-${rank}`;
     card.style.borderColor = color;
-
-    // Rank crown
-    let crownHtml = '';
-    if (rank === 1 && totals[key] > 0) crownHtml = '<span style="font-size:1.2rem;">👑</span>';
-
+    const crown = (rank === 1 && totals[key] > 0) ? '<span style="font-size:1.2rem;">👑</span>' : '';
     card.innerHTML = `
-      <h2 style="color:${color};border-color:${color};">
-        ${crownHtml}${FAMILY_DISPLAY[key]}
-      </h2>
-      <div class="points-display" style="color:${color};">
-        ${totals[key].toFixed(1)} <span style="font-size:0.4em;color:var(--dim);">PTS</span>
-      </div>
-      <div id="picks-${key}"></div>
-    `;
+      <h2 style="color:${color};border-color:${color};">${crown}${FAMILY_DISPLAY[key]}</h2>
+      <div class="points-display" style="color:${color};">${totals[key].toFixed(1)} <span style="font-size:0.4em;color:var(--dim);">PTS</span></div>
+      <div id="picks-${key}"></div>`;
     grid.appendChild(card);
-
     const picksDiv = card.querySelector(`#picks-${key}`);
     if (picks.length === 0) {
       picksDiv.innerHTML = `<div class="wc-team-entry empty">No picks yet</div>`;
     } else {
-      for (const p of picks) {
-        picksDiv.innerHTML += `
-          <div class="wc-team-entry">
-            <span class="wt-flag">${p.flag}</span>
-            <span class="wt-name">${p.name}</span>
-          </div>
-        `;
-      }
-      // Fill blank slots if draft incomplete
-      for (let i = picks.length; i < 12; i++) {
-        picksDiv.innerHTML += `<div class="wc-team-entry empty">— TBD —</div>`;
-      }
+      picks.forEach(p => { picksDiv.innerHTML += `<div class="wc-team-entry"><span class="wt-flag">${p.flag}</span><span class="wt-name">${p.name}</span></div>`; });
+      for (let i = picks.length; i < 12; i++) picksDiv.innerHTML += `<div class="wc-team-entry empty">— TBD —</div>`;
     }
   }
 }
+
+// ── Recent Results ───────────────────────────────────────────────────────────
 
 function renderResults(matches) {
   const list = document.getElementById('results-list');
@@ -134,17 +122,13 @@ function renderResults(matches) {
     list.innerHTML = '<div class="no-results">No results yet. Check back once matches start!</div>';
     return;
   }
-
   list.innerHTML = '';
   for (const m of matches) {
     const stageLabel = STAGE_LABELS[m.stage] || m.stage;
     const earnerHtml = m.earners.map(e => {
       const color = FAMILY_COLORS[e.family] || '#fff';
-      return `<span class="earner-chip" style="color:${color};border-color:${color};">
-        ${FAMILY_DISPLAY[e.family]?.replace(' COONS','')} +${e.pts}
-      </span>`;
+      return `<span class="earner-chip" style="color:${color};border-color:${color};">${FAMILY_DISPLAY[e.family]?.replace(' COONS','')} +${e.pts}</span>`;
     }).join('');
-
     const row = document.createElement('div');
     row.style.cssText = 'margin-bottom:8px;';
     row.innerHTML = `
@@ -155,11 +139,132 @@ function renderResults(matches) {
         <span class="result-team right">${m.awayName} ${m.awayFlag}</span>
         <span></span>
       </div>
-      ${earnerHtml ? `<div style="padding:4px 10px;display:flex;gap:6px;flex-wrap:wrap;">${earnerHtml}</div>` : ''}
-    `;
+      ${earnerHtml ? `<div style="padding:4px 10px;display:flex;gap:6px;flex-wrap:wrap;">${earnerHtml}</div>` : ''}`;
     list.appendChild(row);
   }
 }
+
+// ── Bracket ──────────────────────────────────────────────────────────────────
+
+function renderBracket(data) {
+  const container = document.getElementById('bracket-container');
+  const r32 = data['LAST_32'] || [];
+  const r16 = data['LAST_16'] || [];
+  const qf  = data['QUARTER_FINALS'] || [];
+  const sf  = data['SEMI_FINALS'] || [];
+  const fin = data['FINAL'] || [];
+  const tp  = data['THIRD_PLACE'] || [];
+
+  // Need at least the bracket structure to render
+  if (r32.length === 0 && r16.length === 0 && qf.length === 0 && sf.length === 0 && fin.length === 0) {
+    container.innerHTML = '<div class="no-results">Bracket will appear once teams advance from the group stage.</div>';
+    return;
+  }
+
+  // Split into left half (first 8 R32, first 4 R16, first 2 QF, first SF)
+  // and right half (last 8 R32, last 4 R16, last 2 QF, last SF)
+  const leftR32  = r32.slice(0, 8);
+  const rightR32 = r32.slice(8, 16);
+  const leftR16  = r16.slice(0, 4);
+  const rightR16 = r16.slice(4, 8);
+  const leftQF   = qf.slice(0, 2);
+  const rightQF  = qf.slice(2, 4);
+  const leftSF   = sf.slice(0, 1);
+  const rightSF  = sf.slice(1, 2);
+
+  container.innerHTML = `
+    <div class="bracket-outer">
+      <div class="bracket-tree">
+        <!-- Left half -->
+        <div class="b-half left">
+          <div class="b-col">
+            <div class="b-col-label">ROUND OF 32</div>
+            ${leftR32.map(m => matchCard(m)).join('')}
+          </div>
+          <div class="b-col">
+            <div class="b-col-label">ROUND OF 16</div>
+            ${leftR16.map(m => matchCard(m)).join('')}
+          </div>
+          <div class="b-col">
+            <div class="b-col-label">QUARTER-FINALS</div>
+            ${leftQF.map(m => matchCard(m)).join('')}
+          </div>
+          <div class="b-col">
+            <div class="b-col-label">SEMI-FINALS</div>
+            ${leftSF.map(m => matchCard(m)).join('')}
+          </div>
+        </div>
+
+        <!-- Final (center) -->
+        <div class="b-final-col">
+          <div class="b-final-label">⚽ FINAL ⚽</div>
+          ${fin.map(m => matchCard(m, true)).join('')}
+        </div>
+
+        <!-- Right half (mirrored) -->
+        <div class="b-half right">
+          <div class="b-col">
+            <div class="b-col-label">ROUND OF 32</div>
+            ${rightR32.map(m => matchCard(m)).join('')}
+          </div>
+          <div class="b-col">
+            <div class="b-col-label">ROUND OF 16</div>
+            ${rightR16.map(m => matchCard(m)).join('')}
+          </div>
+          <div class="b-col">
+            <div class="b-col-label">QUARTER-FINALS</div>
+            ${rightQF.map(m => matchCard(m)).join('')}
+          </div>
+          <div class="b-col">
+            <div class="b-col-label">SEMI-FINALS</div>
+            ${rightSF.map(m => matchCard(m)).join('')}
+          </div>
+        </div>
+      </div>
+
+      ${tp.length > 0 ? `
+        <div class="third-place-wrap">
+          <div class="tp-label">🥉 THIRD PLACE 🥉</div>
+          ${tp.map(m => matchCard(m)).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function matchCard(m, isFinal = false) {
+  const isTBD    = s => !s || s === 'TBD' || s.startsWith('Winner') || s.startsWith('Loser') || s.startsWith('Best');
+  const finished = m.status === 'FINISHED';
+  const homeWin  = finished && m.homeScore > m.awayScore;
+  const awayWin  = finished && m.awayScore > m.homeScore;
+
+  const homeDot  = m.homeFamily ? `<span class="b-family-dot" style="background:${FAMILY_COLORS[m.homeFamily]};"></span>` : '';
+  const awayDot  = m.awayFamily ? `<span class="b-family-dot" style="background:${FAMILY_COLORS[m.awayFamily]};"></span>` : '';
+
+  const homeRow = isTBD(m.homeCode)
+    ? `<div class="b-team-row tbd"><span class="b-name">${m.homeName || 'TBD'}</span></div>`
+    : `<div class="b-team-row ${homeWin ? 'winner' : ''}">
+        <span class="b-flag">${m.homeFlag}</span>
+        <span class="b-name">${m.homeName}</span>
+        ${finished ? `<span class="b-score">${m.homeScore}</span>` : ''}
+        ${homeDot}
+       </div>`;
+
+  const awayRow = isTBD(m.awayCode)
+    ? `<div class="b-team-row tbd"><span class="b-name">${m.awayName || 'TBD'}</span></div>`
+    : `<div class="b-team-row ${awayWin ? 'winner' : ''}">
+        <span class="b-flag">${m.awayFlag}</span>
+        <span class="b-name">${m.awayName}</span>
+        ${finished ? `<span class="b-score">${m.awayScore}</span>` : ''}
+        ${awayDot}
+       </div>`;
+
+  const dateStr = m.matchDate ? `<div class="b-date">${m.matchDate}</div>` : '';
+
+  return `<div class="b-match ${finished ? 'finished' : ''} ${isFinal ? 'final-match' : ''}">
+    ${homeRow}${awayRow}${dateStr}
+  </div>`;
+}
+
+// ── Sync ─────────────────────────────────────────────────────────────────────
 
 function renderSyncStatus(lastSync) {
   const el = document.getElementById('last-sync-text');
@@ -198,7 +303,6 @@ async function triggerSync() {
   }
 }
 
-// Load on start, then every 30 seconds
 loadHQ();
 setInterval(loadHQ, 30000);
 </script>

@@ -145,14 +145,14 @@ function lookupTeamCode(tla, name) {
 
 function getWinPoints(stage) {
   switch (stage) {
-    case 'GROUP_STAGE':           return 1;
-    case 'ROUND_OF_32':
-    case 'ROUND_OF_16':
+    case 'GROUP_STAGE':   return 1;
+    case 'LAST_32':
+    case 'LAST_16':
     case 'QUARTER_FINALS':
     case 'SEMI_FINALS':
-    case 'THIRD_PLACE_PLAYOFF':   return 1.5;
-    case 'FINAL':                 return 2;
-    default:                      return 1;
+    case 'THIRD_PLACE':   return 1.5;
+    case 'FINAL':         return 2;
+    default:              return 1;
   }
 }
 
