@@ -58,6 +58,7 @@
 <script>
 const FAMILY_ORDER   = ['og', 'cali', 'co', 'cajun'];
 const FAMILY_DISPLAY = { og: 'OG COONS', cali: 'CALI COONS', co: 'CO COONS', cajun: 'CAJUN COONS' };
+const FAMILY_SHORT   = { og: 'OG', cali: 'Cali', co: 'CO', cajun: 'Cajun' };
 const FAMILY_COLORS  = { og: '#ffd700', cali: '#42a5f5', co: '#66bb6a', cajun: '#ef5350' };
 
 const STAGE_LABELS = {
@@ -236,16 +237,16 @@ function matchCard(m, isFinal = false) {
   const homeWin  = finished && m.homeScore > m.awayScore;
   const awayWin  = finished && m.awayScore > m.homeScore;
 
-  const homeDot  = m.homeFamily ? `<span class="b-family-dot" style="background:${FAMILY_COLORS[m.homeFamily]};"></span>` : '';
-  const awayDot  = m.awayFamily ? `<span class="b-family-dot" style="background:${FAMILY_COLORS[m.awayFamily]};"></span>` : '';
+  const homeLabel = m.homeFamily ? `<span class="b-family-tag" style="color:${FAMILY_COLORS[m.homeFamily]};">(${FAMILY_SHORT[m.homeFamily]})</span>` : '';
+  const awayLabel = m.awayFamily ? `<span class="b-family-tag" style="color:${FAMILY_COLORS[m.awayFamily]};">(${FAMILY_SHORT[m.awayFamily]})</span>` : '';
 
   const homeRow = isTBD(m.homeCode)
     ? `<div class="b-team-row tbd"><span class="b-name">${m.homeName || 'TBD'}</span></div>`
     : `<div class="b-team-row ${homeWin ? 'winner' : ''}">
         <span class="b-flag">${m.homeFlag}</span>
         <span class="b-name">${m.homeName}</span>
+        ${homeLabel}
         ${finished ? `<span class="b-score">${m.homeScore}</span>` : ''}
-        ${homeDot}
        </div>`;
 
   const awayRow = isTBD(m.awayCode)
@@ -253,8 +254,8 @@ function matchCard(m, isFinal = false) {
     : `<div class="b-team-row ${awayWin ? 'winner' : ''}">
         <span class="b-flag">${m.awayFlag}</span>
         <span class="b-name">${m.awayName}</span>
+        ${awayLabel}
         ${finished ? `<span class="b-score">${m.awayScore}</span>` : ''}
-        ${awayDot}
        </div>`;
 
   const dateStr = m.matchDate ? `<div class="b-date">${m.matchDate}</div>` : '';

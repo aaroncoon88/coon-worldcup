@@ -662,6 +662,12 @@ body::after {
   flex-shrink: 0;
   margin-left: 2px;
 }
+.b-family-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.32rem;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
 .b-date {
   font-size: 0.55rem;
   color: var(--dim);
