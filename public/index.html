@@ -22,12 +22,6 @@
   </nav>
 </header>
 
-<div class="sync-bar">
-  <span class="last-sync" id="last-sync-text">Last sync: never</span>
-  <button class="btn btn-green btn-sm" id="sync-btn" onclick="triggerSync()">⟳ SYNC SCORES</button>
-  <span id="sync-status" style="font-size:0.75rem;color:var(--dim);"></span>
-</div>
-
 <!-- Draft notice (shown when draft not complete) -->
 <div class="draft-notice hidden" id="draft-notice">
   <h2 style="color:var(--gold);font-size:0.65rem;">⚠ DRAFT IN PROGRESS</h2>
@@ -307,5 +301,13 @@ async function triggerSync() {
 loadHQ();
 setInterval(loadHQ, 30000);
 </script>
+
+<!-- ── Sync footer ── -->
+<div class="sync-bar sync-footer">
+  <span class="last-sync" id="last-sync-text">Last sync: never</span>
+  <button class="btn btn-green btn-sm" id="sync-btn" onclick="triggerSync()">⟳ SYNC SCORES</button>
+  <span id="sync-status" style="font-size:0.75rem;color:var(--dim);"></span>
+</div>
+
 </body>
 </html>

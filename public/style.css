@@ -186,6 +186,11 @@ body::after {
   color: var(--dim);
   letter-spacing: 1px;
 }
+.sync-footer {
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+  margin-top: 32px;
+}
 
 /* ── Overlay (team select) ── */
 .overlay {
