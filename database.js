@@ -88,14 +88,22 @@ const FAMILY_COLORS = {
   cajun: '#ef5350',
 };
 
-// Snake draft order (3 rounds):
-// Round 1 forward:  OG → Cali → CO → Cajun
-// Round 2 backward: Cajun → CO → Cali → OG
-// Round 3 forward:  OG → Cali → CO → Cajun
+// Snake draft order (12 rounds, 48 picks total — every WC team gets drafted):
+// Odd rounds go forward:  OG → Cali → CO → Cajun
+// Even rounds go backward: Cajun → CO → Cali → OG
 const DRAFT_ORDER = [
-  'og','cali','co','cajun',
-  'cajun','co','cali','og',
-  'og','cali','co','cajun',
+  'og','cali','co','cajun',   // Round  1 →
+  'cajun','co','cali','og',   // Round  2 ←
+  'og','cali','co','cajun',   // Round  3 →
+  'cajun','co','cali','og',   // Round  4 ←
+  'og','cali','co','cajun',   // Round  5 →
+  'cajun','co','cali','og',   // Round  6 ←
+  'og','cali','co','cajun',   // Round  7 →
+  'cajun','co','cali','og',   // Round  8 ←
+  'og','cali','co','cajun',   // Round  9 →
+  'cajun','co','cali','og',   // Round 10 ←
+  'og','cali','co','cajun',   // Round 11 →
+  'cajun','co','cali','og',   // Round 12 ←
 ];
 
 function initDB() {

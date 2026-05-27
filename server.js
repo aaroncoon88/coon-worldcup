@@ -26,7 +26,7 @@ app.get('/draft', (req, res) => {
 app.get('/api/draft/state', (req, res) => {
   const picks      = db.prepare('SELECT * FROM picks ORDER BY pick_number').all();
   const currentPick = picks.length;
-  const isComplete  = currentPick >= 12;
+  const isComplete  = currentPick >= 48;
   const currentTurn = isComplete ? null : DRAFT_ORDER[currentPick];
 
   const pickedMap = {};
@@ -59,7 +59,7 @@ app.post('/api/draft/pick', (req, res) => {
   const picks       = db.prepare('SELECT * FROM picks ORDER BY pick_number').all();
   const currentPick = picks.length;
 
-  if (currentPick >= 12) return res.status(400).json({ error: 'Draft is complete' });
+  if (currentPick >= 48) return res.status(400).json({ error: 'Draft is complete' });
 
   const expected = DRAFT_ORDER[currentPick];
   if (family_team !== expected) {

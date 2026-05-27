@@ -173,7 +173,7 @@ function renderClockBar() {
   const color    = FAMILY_COLORS[turn] || '#fff';
   nameEl.textContent  = name;
   nameEl.style.color  = color;
-  counterEl.textContent = `PICK ${state.currentPick + 1} OF 12`;
+  counterEl.textContent = `PICK ${state.currentPick + 1} OF 48`;
 
   const isMyTurn = myTeam && myTeam === turn;
   barEl.style.borderColor = isMyTurn ? color : 'var(--border)';
@@ -260,7 +260,7 @@ function renderSidebar() {
     title.style.borderColor  = color;
     card.appendChild(title);
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 12; i++) {
       const slot = document.createElement('div');
       slot.className = 'pick-slot';
       if (teamPicks[i]) {
@@ -293,13 +293,14 @@ function closeModal() {
 
 async function confirmPick() {
   if (!pendingPick || !myTeam) return;
+  const pick = pendingPick;
   closeModal();
 
   try {
     const res = await fetch('/api/draft/pick', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ family_team: myTeam, team_code: pendingPick.code }),
+      body: JSON.stringify({ family_team: myTeam, team_code: pick.code }),
     });
     const data = await res.json();
     if (!data.success) alert(data.error || 'Pick failed');
