@@ -329,7 +329,7 @@ async function syncScores() {
     const homeScore = m.score?.fullTime?.home ?? null;
     const awayScore = m.score?.fullTime?.away ?? null;
     const status    = m.status || 'SCHEDULED';
-    const matchDate = m.utcDate ? m.utcDate.split('T')[0] : null;
+    const matchDate = m.utcDate || null;
     const venue     = m.venue || null;
 
     if (GROUP_STAGES.has(stage)) {

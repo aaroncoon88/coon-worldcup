@@ -184,7 +184,14 @@ function renderUpcoming(matches) {
   }
   list.innerHTML = matches.map(m => {
     const stageLabel = STAGE_LABELS[m.stage] || m.stage;
-    const dateStr = m.matchDate ? new Date(m.matchDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) : 'TBD';
+    let dateStr = 'TBD';
+    if (m.matchDate) {
+      const d = new Date(m.matchDate);
+      const day = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', timeZone:'America/Los_Angeles' });
+      const pt  = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true, timeZone:'America/Los_Angeles' }).replace(':00','').replace(' ','');
+      const mt  = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true, timeZone:'America/Denver' }).replace(':00','').replace(' ','');
+      dateStr = `${day}  ${pt} PT / ${mt} MT`;
+    }
     const venueStr = m.venue ? `<span class="match-venue">📍 ${m.venue}</span>` : '';
     return `
       <div class="match-row upcoming">
