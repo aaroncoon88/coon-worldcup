@@ -208,7 +208,7 @@ app.get('/api/upcoming', (req, res) => {
   for (const p of picks) pickMap[p.team_code] = p.family_team;
 
   const rows = db.prepare(
-    "SELECT * FROM matches WHERE status != 'FINISHED' ORDER BY match_date ASC, match_id ASC LIMIT 3"
+    "SELECT * FROM matches WHERE status IN ('SCHEDULED','TIMED') AND match_date >= datetime('now', '-2 hours') ORDER BY match_date ASC, match_id ASC LIMIT 3"
   ).all();
 
   const upcoming = rows.map(m => {

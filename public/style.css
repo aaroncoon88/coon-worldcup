@@ -591,10 +591,16 @@ body::after {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.match-time-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
 .match-venue {
   font-size: 0.75rem;
   color: var(--dim);
-  padding-left: 2px;
 }
 .live-row { border-color: var(--red); }
 .live-badge {

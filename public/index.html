@@ -198,10 +198,9 @@ function renderUpcoming(matches) {
         <span class="match-stage">${stageLabel}</span>
         <div class="match-teams">
           <span class="match-team">${m.homeFlag} ${m.homeName} ${familyTag(m.homeFamily)}</span>
-          <span class="match-score upcoming-time">${dateStr}</span>
           <span class="match-team away">${familyTag(m.awayFamily)} ${m.awayName} ${m.awayFlag}</span>
         </div>
-        ${venueStr}
+        <div class="match-time-row"><span class="upcoming-time">${dateStr}</span>${venueStr}</div>
       </div>`;
   }).join('');
 }
