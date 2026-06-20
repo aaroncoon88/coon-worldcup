@@ -9,34 +9,13 @@
 <body>
 
 <header class="site-header">
-  <h1>🏆 COON FAMILY WORLD CUP HQ 🏆</h1>
-  <div class="subtitle">2026 FIFA WORLD CUP</div>
-  <div class="pixel-player-wrap">
-    <div class="pixel-player-frame">
-      <img src="soccer-player.jpg" alt="Retro Soccer Player">
-    </div>
+  <div class="header-top">
+    <img src="soccer-player.jpg" class="header-player-img" alt="">
+    <h1>🏆 COON FAMILY WORLD CUP HQ 🏆</h1>
+    <img src="soccer-player.jpg" class="header-player-img" alt="">
   </div>
-  <nav>
-    <a href="/" class="nav-link active">HQ</a>
-    <a href="/draft" class="nav-link">DRAFT</a>
-  </nav>
   <div class="header-scoreboard" id="header-scoreboard">
-    <div class="hsb-slot" id="hsb-og">
-      <div class="hsb-name" style="color:#ffd700;">OG</div>
-      <div class="hsb-pts" style="color:#ffd700;">–</div>
-    </div>
-    <div class="hsb-slot" id="hsb-cali">
-      <div class="hsb-name" style="color:#42a5f5;">CALI</div>
-      <div class="hsb-pts" style="color:#42a5f5;">–</div>
-    </div>
-    <div class="hsb-slot" id="hsb-co">
-      <div class="hsb-name" style="color:#66bb6a;">CO</div>
-      <div class="hsb-pts" style="color:#66bb6a;">–</div>
-    </div>
-    <div class="hsb-slot" id="hsb-cajun">
-      <div class="hsb-name" style="color:#ef5350;">CAJUN</div>
-      <div class="hsb-pts" style="color:#ef5350;">–</div>
-    </div>
+    <div class="hsb-loading">LOADING...</div>
   </div>
 </header>
 
@@ -98,10 +77,20 @@ async function loadHQ() {
 // ── Standings ────────────────────────────────────────────────────────────────
 
 function renderScoreboard(totals) {
-  for (const key of FAMILY_ORDER) {
-    const el = document.getElementById(`hsb-${key}`);
-    if (el) el.querySelector('.hsb-pts').textContent = totals[key].toFixed(1);
-  }
+  const sb = document.getElementById('header-scoreboard');
+  const sorted = [...FAMILY_ORDER].sort((a, b) => totals[b] - totals[a]);
+  let html = '<div class="hsb-title">— HIGH SCORES —</div>';
+  sorted.forEach((key, i) => {
+    const rank = i + 1;
+    const prefix = (rank === 1 && totals[key] > 0) ? '👑' : `${rank}.`;
+    const c = FAMILY_COLORS[key];
+    html += `<div class="hsb-row">
+      <span class="hsb-rank" style="color:${c};">${prefix}</span>
+      <span class="hsb-name" style="color:${c};">${FAMILY_DISPLAY[key]}</span>
+      <span class="hsb-pts" style="color:${c};">${totals[key].toFixed(1)}</span>
+    </div>`;
+  });
+  sb.innerHTML = html;
 }
 
 function renderStandings(data) {

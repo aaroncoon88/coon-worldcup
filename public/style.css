@@ -118,25 +118,32 @@ body::after {
 /* ── Header bar ── */
 .site-header {
   background: #050f05;
-  border-bottom: 4px solid var(--gold);
-  padding: 18px 24px;
+  border-bottom: 3px solid var(--gold);
+  padding: 8px 16px 10px;
   text-align: center;
   position: sticky;
   top: 0;
   z-index: 100;
 }
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 .site-header h1 {
   color: var(--gold);
-  text-shadow: 0 0 12px rgba(255,215,0,0.5);
-  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255,215,0,0.4);
+  letter-spacing: 1px;
+  font-size: clamp(0.55rem, 2vw, 0.95rem);
 }
-.site-header .subtitle {
-  color: var(--dim);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin-top: 6px;
+.header-player-img {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 6px rgba(255,215,0,0.3), 2px 2px 0 #000;
+  flex-shrink: 0;
 }
 .site-header nav {
   margin-top: 10px;
@@ -469,32 +476,49 @@ body::after {
 }
 .wc-team-entry.empty { color: var(--dim); font-style: italic; }
 
-/* ── Header scoreboard ── */
+/* ── Header scoreboard (arcade style) ── */
 .header-scoreboard {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
-  flex-wrap: wrap;
+  margin-top: 8px;
+  display: inline-block;
+  text-align: left;
 }
-.hsb-slot {
-  background: #0a1a0a;
-  border: 2px solid #2e5c2e;
-  box-shadow: 3px 3px 0 #000, inset 0 0 8px rgba(0,0,0,0.6);
-  padding: 6px 14px;
+.hsb-loading {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  color: var(--dim);
+}
+.hsb-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  color: var(--gold);
   text-align: center;
-  min-width: 72px;
+  letter-spacing: 2px;
+  margin-bottom: 3px;
+}
+.hsb-row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  line-height: 1.9;
+}
+.hsb-rank {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  width: 16px;
+  text-align: right;
+  flex-shrink: 0;
 }
 .hsb-name {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.42rem;
+  width: 90px;
   letter-spacing: 1px;
-  margin-bottom: 4px;
 }
 .hsb-pts {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.85rem;
-  line-height: 1;
+  font-size: 0.5rem;
+  min-width: 38px;
+  text-align: right;
 }
 
 /* ── Recent results table ── */
@@ -573,26 +597,6 @@ body::after {
 }
 .draft-notice p { color: var(--dim); margin-top: 8px; font-size: 0.9rem; }
 
-/* ── Pixel player widget ── */
-.pixel-player-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 10px;
-}
-.pixel-player-frame {
-  border: 3px solid var(--gold);
-  box-shadow: 0 0 12px rgba(255,215,0,0.4), 3px 3px 0 #000;
-  line-height: 0;
-  flex-shrink: 0;
-}
-.pixel-player-frame img {
-  display: block;
-  width: 72px;
-  height: 72px;
-  image-rendering: pixelated;
-}
 
 /* ── Knockout bracket ── */
 .bracket-section {
