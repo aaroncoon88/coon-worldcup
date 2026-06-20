@@ -171,6 +171,37 @@ app.get('/api/hq', (req, res) => {
   });
 });
 
+app.get('/api/live', (req, res) => {
+  const picks   = db.prepare('SELECT * FROM picks').all();
+  const pickMap = {};
+  for (const p of picks) pickMap[p.team_code] = p.family_team;
+
+  const rows = db.prepare(
+    "SELECT * FROM matches WHERE status IN ('IN_PLAY','PAUSED','HALFTIME','EXTRA_TIME','PENALTY_SHOOTOUT') ORDER BY match_date ASC, match_id ASC"
+  ).all();
+
+  const live = rows.map(m => {
+    const home = TEAM_BY_CODE[m.home_team];
+    const away = TEAM_BY_CODE[m.away_team];
+    return {
+      matchId:    m.match_id,
+      stage:      m.stage,
+      status:     m.status,
+      matchDate:  m.match_date,
+      homeName:   home?.name || m.home_team,
+      homeFlag:   home?.flag || '',
+      homeScore:  m.home_score,
+      homeFamily: pickMap[m.home_team] || null,
+      awayName:   away?.name || m.away_team,
+      awayFlag:   away?.flag || '',
+      awayScore:  m.away_score,
+      awayFamily: pickMap[m.away_team] || null,
+    };
+  });
+
+  res.json(live);
+});
+
 app.get('/api/upcoming', (req, res) => {
   const picks   = db.prepare('SELECT * FROM picks').all();
   const pickMap = {};

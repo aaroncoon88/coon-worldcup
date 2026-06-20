@@ -38,6 +38,12 @@
   </div>
 </section>
 
+<!-- ── Live / In Progress ── -->
+<section class="results-section" id="live-section" style="display:none;">
+  <h2>🔴 LIVE NOW</h2>
+  <div id="live-list"></div>
+</section>
+
 <!-- ── Upcoming Games ── -->
 <section class="results-section">
   <h2>📅 UPCOMING GAMES</h2>
@@ -69,12 +75,16 @@ const STAGE_LABELS = {
 
 async function loadHQ() {
   try {
-    const [hqRes, bracketRes, upcomingRes] = await Promise.all([fetch('/api/hq'), fetch('/api/bracket'), fetch('/api/upcoming')]);
+    const [hqRes, bracketRes, upcomingRes, liveRes] = await Promise.all([
+      fetch('/api/hq'), fetch('/api/bracket'), fetch('/api/upcoming'), fetch('/api/live')
+    ]);
     const data     = await hqRes.json();
     const bracket  = await bracketRes.json();
     const upcoming = await upcomingRes.json();
+    const live     = await liveRes.json();
     renderStandings(data);
     renderResults(data.recentMatches);
+    renderLive(live);
     renderUpcoming(upcoming);
     renderSyncStatus(data.lastSync);
     renderBracket(bracket);
@@ -185,6 +195,32 @@ function renderUpcoming(matches) {
           <span class="match-team away">${familyTag(m.awayFamily)} ${m.awayName} ${m.awayFlag}</span>
         </div>
         ${venueStr}
+      </div>`;
+  }).join('');
+}
+
+function renderLive(matches) {
+  const section = document.getElementById('live-section');
+  const list    = document.getElementById('live-list');
+  if (!matches || matches.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  list.innerHTML = matches.map(m => {
+    const stageLabel = STAGE_LABELS[m.stage] || m.stage;
+    const statusLabel = m.status === 'HALFTIME' ? 'HT' : m.status === 'PAUSED' ? 'PAUSED' : 'LIVE';
+    return `
+      <div class="match-row live-row">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="match-stage">${stageLabel}</span>
+          <span class="live-badge">${statusLabel}</span>
+        </div>
+        <div class="match-teams">
+          <span class="match-team">${m.homeFlag} ${m.homeName} ${familyTag(m.homeFamily)}</span>
+          <span class="match-score">${m.homeScore ?? '–'} – ${m.awayScore ?? '–'}</span>
+          <span class="match-team away">${familyTag(m.awayFamily)} ${m.awayName} ${m.awayFlag}</span>
+        </div>
       </div>`;
   }).join('');
 }

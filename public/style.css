@@ -596,6 +596,17 @@ body::after {
   color: var(--dim);
   padding-left: 2px;
 }
+.live-row { border-color: var(--red); }
+.live-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.3rem;
+  color: #000;
+  background: var(--red);
+  padding: 2px 5px;
+  animation: blink 1s step-start infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
 .family-tag {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.3rem;
