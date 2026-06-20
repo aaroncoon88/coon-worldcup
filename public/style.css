@@ -461,7 +461,41 @@ body::after {
 }
 .wc-team-entry .wt-flag { font-size: 1.1rem; }
 .wc-team-entry .wt-name { flex: 1; }
+.wc-team-entry .wt-pts {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  color: var(--bright);
+  white-space: nowrap;
+}
 .wc-team-entry.empty { color: var(--dim); font-style: italic; }
+
+/* ── Header scoreboard ── */
+.header-scoreboard {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.hsb-slot {
+  background: #0a1a0a;
+  border: 2px solid #2e5c2e;
+  box-shadow: 3px 3px 0 #000, inset 0 0 8px rgba(0,0,0,0.6);
+  padding: 6px 14px;
+  text-align: center;
+  min-width: 72px;
+}
+.hsb-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.hsb-pts {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.85rem;
+  line-height: 1;
+}
 
 /* ── Recent results table ── */
 .results-section {

@@ -104,14 +104,17 @@ app.get('/api/standings', (req, res) => {
 });
 
 app.get('/api/hq', (req, res) => {
-  const picks   = db.prepare('SELECT * FROM picks ORDER BY pick_number').all();
-  const matches = db.prepare("SELECT * FROM matches WHERE status = 'FINISHED' ORDER BY match_date DESC, match_id DESC LIMIT 30").all();
+  const picks      = db.prepare('SELECT * FROM picks ORDER BY pick_number').all();
+  const allFinished = db.prepare("SELECT * FROM matches WHERE status = 'FINISHED'").all();
+  const recent30   = db.prepare("SELECT * FROM matches WHERE status = 'FINISHED' ORDER BY match_date DESC, match_id DESC LIMIT 30").all();
 
-  // Build totals
-  const totals = { og: 0, cali: 0, co: 0, cajun: 0 };
-  for (const match of matches) {
+  // Build totals + per-team points from ALL finished matches
+  const totals  = { og: 0, cali: 0, co: 0, cajun: 0 };
+  const teamPts = {};
+  for (const match of allFinished) {
     const pts = calculateMatchPoints(match);
     for (const [code, p] of Object.entries(pts)) {
+      teamPts[code] = (teamPts[code] || 0) + p;
       const pick = picks.find(x => x.team_code === code);
       if (pick) totals[pick.family_team] += p;
     }
@@ -119,17 +122,20 @@ app.get('/api/hq', (req, res) => {
   for (const k of Object.keys(totals)) {
     totals[k] = Math.round(totals[k] * 10) / 10;
   }
+  for (const k of Object.keys(teamPts)) {
+    teamPts[k] = Math.round(teamPts[k] * 10) / 10;
+  }
 
-  // Build picks-per-family summary
+  // Build picks-per-family summary (with per-team pts)
   const summary = {};
   for (const key of Object.keys(FAMILY_NAMES)) summary[key] = [];
   for (const p of picks) {
     const team = TEAM_BY_CODE[p.team_code];
-    if (team) summary[p.family_team].push({ code: team.code, name: team.name, flag: team.flag });
+    if (team) summary[p.family_team].push({ code: team.code, name: team.name, flag: team.flag, pts: teamPts[team.code] || 0 });
   }
 
   // Recent results with point earners
-  const recentMatches = matches.slice(0, 10).map(match => {
+  const recentMatches = recent30.slice(0, 10).map(match => {
     const pts     = calculateMatchPoints(match);
     const earners = [];
     for (const [code, p] of Object.entries(pts)) {

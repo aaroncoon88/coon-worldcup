@@ -20,6 +20,24 @@
     <a href="/" class="nav-link active">HQ</a>
     <a href="/draft" class="nav-link">DRAFT</a>
   </nav>
+  <div class="header-scoreboard" id="header-scoreboard">
+    <div class="hsb-slot" id="hsb-og">
+      <div class="hsb-name" style="color:#ffd700;">OG</div>
+      <div class="hsb-pts" style="color:#ffd700;">–</div>
+    </div>
+    <div class="hsb-slot" id="hsb-cali">
+      <div class="hsb-name" style="color:#42a5f5;">CALI</div>
+      <div class="hsb-pts" style="color:#42a5f5;">–</div>
+    </div>
+    <div class="hsb-slot" id="hsb-co">
+      <div class="hsb-name" style="color:#66bb6a;">CO</div>
+      <div class="hsb-pts" style="color:#66bb6a;">–</div>
+    </div>
+    <div class="hsb-slot" id="hsb-cajun">
+      <div class="hsb-name" style="color:#ef5350;">CAJUN</div>
+      <div class="hsb-pts" style="color:#ef5350;">–</div>
+    </div>
+  </div>
 </header>
 
 <!-- Draft notice (shown when draft not complete) -->
@@ -79,11 +97,20 @@ async function loadHQ() {
 
 // ── Standings ────────────────────────────────────────────────────────────────
 
+function renderScoreboard(totals) {
+  for (const key of FAMILY_ORDER) {
+    const el = document.getElementById(`hsb-${key}`);
+    if (el) el.querySelector('.hsb-pts').textContent = totals[key].toFixed(1);
+  }
+}
+
 function renderStandings(data) {
   const grid    = document.getElementById('standings-grid');
   const totals  = data.totals;
   const summary = data.summary;
   const ranked  = [...FAMILY_ORDER].sort((a, b) => totals[b] - totals[a]);
+
+  renderScoreboard(totals);
 
   grid.innerHTML = '';
   for (const key of ranked) {
@@ -103,7 +130,10 @@ function renderStandings(data) {
     if (picks.length === 0) {
       picksDiv.innerHTML = `<div class="wc-team-entry empty">No picks yet</div>`;
     } else {
-      picks.forEach(p => { picksDiv.innerHTML += `<div class="wc-team-entry"><span class="wt-flag">${p.flag}</span><span class="wt-name">${p.name}</span></div>`; });
+      picks.forEach(p => {
+        const ptsStr = p.pts > 0 ? `<span class="wt-pts">${p.pts} pts</span>` : '';
+        picksDiv.innerHTML += `<div class="wc-team-entry"><span class="wt-flag">${p.flag}</span><span class="wt-name">${p.name}</span>${ptsStr}</div>`;
+      });
       for (let i = picks.length; i < 12; i++) picksDiv.innerHTML += `<div class="wc-team-entry empty">— TBD —</div>`;
     }
   }
