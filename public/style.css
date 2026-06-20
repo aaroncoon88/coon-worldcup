@@ -534,47 +534,76 @@ body::after {
   border-bottom: 2px solid var(--border);
   margin-bottom: 12px;
 }
-.result-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto 1fr auto;
-  align-items: center;
-  gap: 8px;
+.match-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 10px;
   background: var(--card);
   border: 1px solid var(--border);
   margin-bottom: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
 }
-.result-row:nth-child(even) { background: var(--bg2); }
-.result-stage {
+.match-row.upcoming { border-color: #2e5c2e; }
+.match-stage {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.35rem;
+  font-size: 0.33rem;
   color: var(--dim);
   padding: 2px 5px;
   border: 1px solid var(--border);
   white-space: nowrap;
+  align-self: flex-start;
 }
-.result-score {
+.match-teams {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.match-team {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  flex: 1;
+  min-width: 120px;
+}
+.match-team.away { justify-content: flex-end; }
+.match-score {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.7rem;
   color: var(--gold);
   text-align: center;
-  padding: 2px 8px;
+  padding: 3px 10px;
   background: #050f05;
   border: 2px solid var(--border);
   white-space: nowrap;
+  flex-shrink: 0;
 }
-.result-team { display: flex; align-items: center; gap: 6px; }
-.result-team.right { justify-content: flex-end; }
-.result-earners { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-.earner-chip {
+.upcoming-time {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.32rem;
-  padding: 2px 5px;
-  border: 1px solid;
+  font-size: 0.38rem;
+  color: var(--bright);
+  text-align: center;
+  padding: 4px 8px;
+  background: #050f05;
+  border: 2px solid #2e5c2e;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.result-full-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.match-venue {
+  font-size: 0.75rem;
+  color: var(--dim);
+  padding-left: 2px;
+}
+.family-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.3rem;
+  padding: 2px 4px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 /* ── No results placeholder ── */
 .no-results {

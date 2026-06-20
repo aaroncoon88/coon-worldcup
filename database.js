@@ -133,6 +133,8 @@ function initDB() {
       value TEXT
     );
   `);
+  // Add venue column if it doesn't exist yet (safe migration)
+  try { db.exec('ALTER TABLE matches ADD COLUMN venue TEXT'); } catch(e) {}
 }
 
 function lookupTeamCode(tla, name) {

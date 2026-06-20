@@ -38,6 +38,14 @@
   </div>
 </section>
 
+<!-- ── Upcoming Games ── -->
+<section class="results-section">
+  <h2>📅 UPCOMING GAMES</h2>
+  <div id="upcoming-list">
+    <div class="no-results">Loading upcoming matches...</div>
+  </div>
+</section>
+
 <!-- ── Knockout Bracket ── -->
 <section class="bracket-section">
   <h2>🏆 KNOCKOUT BRACKET</h2>
@@ -61,11 +69,13 @@ const STAGE_LABELS = {
 
 async function loadHQ() {
   try {
-    const [hqRes, bracketRes] = await Promise.all([fetch('/api/hq'), fetch('/api/bracket')]);
-    const data    = await hqRes.json();
-    const bracket = await bracketRes.json();
+    const [hqRes, bracketRes, upcomingRes] = await Promise.all([fetch('/api/hq'), fetch('/api/bracket'), fetch('/api/upcoming')]);
+    const data     = await hqRes.json();
+    const bracket  = await bracketRes.json();
+    const upcoming = await upcomingRes.json();
     renderStandings(data);
     renderResults(data.recentMatches);
+    renderUpcoming(upcoming);
     renderSyncStatus(data.lastSync);
     renderBracket(bracket);
     document.getElementById('draft-notice').classList.toggle('hidden', data.draftComplete);
@@ -130,32 +140,53 @@ function renderStandings(data) {
 
 // ── Recent Results ───────────────────────────────────────────────────────────
 
+function familyTag(key) {
+  if (!key) return '';
+  const c = FAMILY_COLORS[key];
+  return `<span class="family-tag" style="color:${c};border-color:${c};">${FAMILY_SHORT[key]}</span>`;
+}
+
 function renderResults(matches) {
   const list = document.getElementById('results-list');
   if (!matches || matches.length === 0) {
     list.innerHTML = '<div class="no-results">No results yet. Check back once matches start!</div>';
     return;
   }
-  list.innerHTML = '';
-  for (const m of matches) {
+  list.innerHTML = matches.map(m => {
     const stageLabel = STAGE_LABELS[m.stage] || m.stage;
-    const earnerHtml = m.earners.map(e => {
-      const color = FAMILY_COLORS[e.family] || '#fff';
-      return `<span class="earner-chip" style="color:${color};border-color:${color};">${FAMILY_DISPLAY[e.family]?.replace(' COONS','')} +${e.pts}</span>`;
-    }).join('');
-    const row = document.createElement('div');
-    row.style.cssText = 'margin-bottom:8px;';
-    row.innerHTML = `
-      <div class="result-row">
-        <span class="result-stage">${stageLabel}</span>
-        <span class="result-team">${m.homeFlag} ${m.homeName}</span>
-        <span class="result-score">${m.homeScore} – ${m.awayScore}</span>
-        <span class="result-team right">${m.awayName} ${m.awayFlag}</span>
-        <span></span>
-      </div>
-      ${earnerHtml ? `<div style="padding:4px 10px;display:flex;gap:6px;flex-wrap:wrap;">${earnerHtml}</div>` : ''}`;
-    list.appendChild(row);
+    return `
+      <div class="match-row">
+        <span class="match-stage">${stageLabel}</span>
+        <div class="match-teams">
+          <span class="match-team">${m.homeFlag} ${m.homeName} ${familyTag(m.homeFamily)}</span>
+          <span class="match-score">${m.homeScore} – ${m.awayScore}</span>
+          <span class="match-team away">${familyTag(m.awayFamily)} ${m.awayName} ${m.awayFlag}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderUpcoming(matches) {
+  const list = document.getElementById('upcoming-list');
+  if (!matches || matches.length === 0) {
+    list.innerHTML = '<div class="no-results">No upcoming matches found.</div>';
+    return;
   }
+  list.innerHTML = matches.map(m => {
+    const stageLabel = STAGE_LABELS[m.stage] || m.stage;
+    const dateStr = m.matchDate ? new Date(m.matchDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) : 'TBD';
+    const venueStr = m.venue ? `<span class="match-venue">📍 ${m.venue}</span>` : '';
+    return `
+      <div class="match-row upcoming">
+        <span class="match-stage">${stageLabel}</span>
+        <div class="match-teams">
+          <span class="match-team">${m.homeFlag} ${m.homeName} ${familyTag(m.homeFamily)}</span>
+          <span class="match-score upcoming-time">${dateStr}</span>
+          <span class="match-team away">${familyTag(m.awayFamily)} ${m.awayName} ${m.awayFlag}</span>
+        </div>
+        ${venueStr}
+      </div>`;
+  }).join('');
 }
 
 // ── Bracket ──────────────────────────────────────────────────────────────────

@@ -134,17 +134,12 @@ app.get('/api/hq', (req, res) => {
     if (team) summary[p.family_team].push({ code: team.code, name: team.name, flag: team.flag, pts: teamPts[team.code] || 0 });
   }
 
-  // Recent results with point earners
-  const recentMatches = recent30.slice(0, 10).map(match => {
-    const pts     = calculateMatchPoints(match);
-    const earners = [];
-    for (const [code, p] of Object.entries(pts)) {
-      if (p > 0) {
-        const pick = picks.find(x => x.team_code === code);
-        const team = TEAM_BY_CODE[code];
-        if (pick && team) earners.push({ family: pick.family_team, teamName: team.name, pts });
-      }
-    }
+  // Build pick map: team_code → family key
+  const pickMap = {};
+  for (const p of picks) pickMap[p.team_code] = p.family_team;
+
+  // Recent results — last 3 only, with family tags per team
+  const recentMatches = recent30.slice(0, 3).map(match => {
     const home = TEAM_BY_CODE[match.home_team];
     const away = TEAM_BY_CODE[match.away_team];
     return {
@@ -154,10 +149,11 @@ app.get('/api/hq', (req, res) => {
       homeName:   home?.name || match.home_team,
       homeFlag:   home?.flag || '',
       homeScore:  match.home_score,
+      homeFamily: pickMap[match.home_team] || null,
       awayName:   away?.name || match.away_team,
       awayFlag:   away?.flag || '',
       awayScore:  match.away_score,
-      earners,
+      awayFamily: pickMap[match.away_team] || null,
     };
   });
 
@@ -173,6 +169,35 @@ app.get('/api/hq', (req, res) => {
     familyNames:   FAMILY_NAMES,
     familyColors:  FAMILY_COLORS,
   });
+});
+
+app.get('/api/upcoming', (req, res) => {
+  const picks   = db.prepare('SELECT * FROM picks').all();
+  const pickMap = {};
+  for (const p of picks) pickMap[p.team_code] = p.family_team;
+
+  const rows = db.prepare(
+    "SELECT * FROM matches WHERE status != 'FINISHED' ORDER BY match_date ASC, match_id ASC LIMIT 3"
+  ).all();
+
+  const upcoming = rows.map(m => {
+    const home = TEAM_BY_CODE[m.home_team];
+    const away = TEAM_BY_CODE[m.away_team];
+    return {
+      matchId:    m.match_id,
+      stage:      m.stage,
+      matchDate:  m.match_date,
+      venue:      m.venue || null,
+      homeName:   home?.name || m.home_team,
+      homeFlag:   home?.flag || '',
+      homeFamily: pickMap[m.home_team] || null,
+      awayName:   away?.name || m.away_team,
+      awayFlag:   away?.flag || '',
+      awayFamily: pickMap[m.away_team] || null,
+    };
+  });
+
+  res.json(upcoming);
 });
 
 app.get('/api/bracket', (req, res) => {
@@ -252,14 +277,15 @@ async function syncScores() {
   const matches = data.matches || [];
 
   const upsert = db.prepare(`
-    INSERT INTO matches (match_id, home_team, away_team, home_score, away_score, stage, status, match_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO matches (match_id, home_team, away_team, home_score, away_score, stage, status, match_date, venue)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(match_id) DO UPDATE SET
       home_team    = excluded.home_team,
       away_team    = excluded.away_team,
       home_score   = excluded.home_score,
       away_score   = excluded.away_score,
       status       = excluded.status,
+      venue        = excluded.venue,
       last_updated = CURRENT_TIMESTAMP
   `);
 
@@ -273,19 +299,20 @@ async function syncScores() {
     const awayScore = m.score?.fullTime?.away ?? null;
     const status    = m.status || 'SCHEDULED';
     const matchDate = m.utcDate ? m.utcDate.split('T')[0] : null;
+    const venue     = m.venue || null;
 
     if (GROUP_STAGES.has(stage)) {
       // Group stage — only store if both teams are resolved
       const homeCode = lookupTeamCode(m.homeTeam?.tla, m.homeTeam?.name);
       const awayCode = lookupTeamCode(m.awayTeam?.tla, m.awayTeam?.name);
       if (!homeCode || !awayCode) { skipped++; continue; }
-      upsert.run(m.id, homeCode, awayCode, homeScore, awayScore, stage, status, matchDate);
+      upsert.run(m.id, homeCode, awayCode, homeScore, awayScore, stage, status, matchDate, venue);
     } else {
       // Knockout stage — store even with TBD teams so bracket shows up.
       // Try to resolve to a team code; fall back to the display label from the API.
       const homeCode = lookupTeamCode(m.homeTeam?.tla, m.homeTeam?.name) || m.homeTeam?.name || 'TBD';
       const awayCode = lookupTeamCode(m.awayTeam?.tla, m.awayTeam?.name) || m.awayTeam?.name || 'TBD';
-      upsert.run(m.id, homeCode, awayCode, homeScore, awayScore, stage, status, matchDate);
+      upsert.run(m.id, homeCode, awayCode, homeScore, awayScore, stage, status, matchDate, venue);
     }
     synced++;
   }
